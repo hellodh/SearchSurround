@@ -15,6 +15,7 @@
 		33723B3F1F3D7C240002D775 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 33723B3D1F3D7C240002D775 /* LaunchScreen.storyboard */; };
 		33723B4A1F3D7C240002D775 /* HeadingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 33723B491F3D7C240002D775 /* HeadingTests.m */; };
 		33723B551F3D7C240002D775 /* HeadingUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 33723B541F3D7C240002D775 /* HeadingUITests.m */; };
+		3380510F1F4286F000393FFF /* radar.png in Resources */ = {isa = PBXBuildFile; fileRef = 3380510E1F4286F000393FFF /* radar.png */; };
 		339F98BF1F4153F0002FEC75 /* compass.png in Resources */ = {isa = PBXBuildFile; fileRef = 339F98BE1F4153F0002FEC75 /* compass.png */; };
 /* End PBXBuildFile section */
 
@@ -52,6 +53,7 @@
 		33723B501F3D7C240002D775 /* HeadingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HeadingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		33723B541F3D7C240002D775 /* HeadingUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HeadingUITests.m; sourceTree = "<group>"; };
 		33723B561F3D7C240002D775 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3380510E1F4286F000393FFF /* radar.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = radar.png; sourceTree = "<group>"; };
 		339F98BE1F4153F0002FEC75 /* compass.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = compass.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -103,6 +105,7 @@
 		33723B2E1F3D7C240002D775 /* Heading */ = {
 			isa = PBXGroup;
 			children = (
+				3380510E1F4286F000393FFF /* radar.png */,
 				339F98BE1F4153F0002FEC75 /* compass.png */,
 				33723B321F3D7C240002D775 /* AppDelegate.h */,
 				33723B331F3D7C240002D775 /* AppDelegate.m */,
@@ -250,6 +253,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3380510F1F4286F000393FFF /* radar.png in Resources */,
 				339F98BF1F4153F0002FEC75 /* compass.png in Resources */,
 				33723B3F1F3D7C240002D775 /* LaunchScreen.storyboard in Resources */,
 				33723B3C1F3D7C240002D775 /* Assets.xcassets in Resources */,
@@ -431,6 +435,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = J897ARK84J;
 				INFOPLIST_FILE = Heading/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yike.Heading;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -443,6 +448,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = J897ARK84J;
 				INFOPLIST_FILE = Heading/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.yike.Heading;
 				PRODUCT_NAME = "$(TARGET_NAME)";

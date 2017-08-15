@@ -13,7 +13,10 @@
 @end
 
 @implementation AppDelegate
-
+//观音山118.204862,24.501276
+//厦门司法局118.1524,24.511403
+//加州商业广场118.160377,24.486413
+//会展中心118.184524,24.474968
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
