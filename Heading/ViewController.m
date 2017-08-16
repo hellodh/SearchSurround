@@ -52,10 +52,13 @@ typedef void(^TouchUpBubble)(void);
     BOOL isLocationFinish;
     CGFloat separateLine;
 }
+@property (nonatomic, strong)UIActivityIndicatorView *indicateView;
+@property (nonatomic, copy)NSString *searchQuery;
 @property (nonatomic, strong) CLLocationManager *locationManager;
 @property (nonatomic, assign) LocationHeading locationDirection;
 @property (nonatomic, strong) UILabel *directionL;
 @property (nonatomic, strong) UIView *directionAnimationL;
+@property (nonatomic, strong) UITextField *inputAddressText;
 @property (nonatomic, strong) UIView *radarView;
 @property (nonnull, copy)NSNumber *previousAngle;
 @property (nonatomic, strong)UIImagePickerController *imagePicker;
@@ -84,8 +87,55 @@ typedef void(^TouchUpBubble)(void);
     return _imagePicker;
 }
 #pragma mark - Private
-- (void)initLocationView {
+- (void)keyboardFrameHide:(NSNotification *)noti {
+    [UIView animateWithDuration:.05 animations:^{
+        _inputAddressText.frame =  CGRectMake(10, [UIScreen mainScreen].bounds.size.height - 50, [UIScreen mainScreen].bounds.size.width - 20, 40);
+    }];
     
+}
+- (void)keyboardFrameChange:(NSNotification *)noti {
+    CGRect rect = {{1, 1}, {1, 1}};
+    CGPoint point = {1, 1};
+    CGSize size = {100 , 100};
+    NSDictionary *userInfo = noti.userInfo;
+    id keyboardObj = [userInfo objectForKey:UIKeyboardFrameEndUserInfoKey];
+    NSValue *value = keyboardObj;
+    CGRect keyboardRect = value.CGRectValue;
+    [UIView animateWithDuration:.1 animations:^{
+        _inputAddressText.frame = CGRectMake(_inputAddressText.frame.origin.x, keyboardRect.origin.y - _inputAddressText.frame.size.height - 5, _inputAddressText.frame.size.width, _inputAddressText.frame.size.height);
+    }];
+    
+    
+}
+- (void)searchAddress {
+    if (![_inputAddressText.text isEqualToString:_searchQuery]) {
+        _searchQuery = _inputAddressText.text;
+        _inputAddressText.placeholder = _searchQuery;
+        [_inputAddressText resignFirstResponder];
+        [_indicateView startAnimating];
+        
+        [_locationArr removeAllObjects];
+        for (DotView *view in _dotViewArr) {
+            [view removeFromSuperview];
+        }
+        [_dotViewArr removeAllObjects];
+        for (DotAddressView *view in _dotAddViewArr) {
+            [view removeFromSuperview];
+        }
+        [_dotAddViewArr removeAllObjects];
+        isLocationFinish = NO;
+        [_locationManager startUpdatingLocation];
+    }
+}
+
+- (void)initLocationView {
+    for (NSDictionary *dic in _locationArr) {
+        DotAddressView *view = [[DotAddressView alloc]initWithFrame:CGRectMake(0, 0, 50, 50)];
+        view.dataDic = dic;
+        
+        [_dotAddViewArr addObject:view];
+        [_container addSubview:view];
+    }
 }
 - (void)handleDirection: (CLLocationDirection )location {
     double result = location / 90;
@@ -142,7 +192,8 @@ typedef void(^TouchUpBubble)(void);
     MKCoordinateRegion region = MKCoordinateRegionMakeWithDistance(coordinate,100, 100);
     MKLocalSearchRequest *request = [[MKLocalSearchRequest alloc]init];
     request.region = region;
-    request.naturalLanguageQuery = @"Restaurants";
+    request.naturalLanguageQuery = _searchQuery;
+    
     MKLocalSearch *localSearch = [[MKLocalSearch alloc]initWithRequest:request];
     [localSearch startWithCompletionHandler:^(MKLocalSearchResponse *response, NSError *error){
         if (!error) {
@@ -154,18 +205,15 @@ typedef void(^TouchUpBubble)(void);
                 [geo geocodeAddressString:item.name completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
                     CLPlacemark *place = placemarks[0];
                     if (!place) return;
-                    [_locationArr addObject:@{@"address":place.name, @"coordinate":place.location}];
+                    NSDictionary *dic = place.addressDictionary;
+                    NSString *tmpStr = [NSString stringWithFormat:@"%@%@%@", dic[@"State"], dic[@"SubLocality"], dic[@"City"]];
+                    
+                    [_locationArr addObject:@{@"address":[place.name substringFromIndex:tmpStr.length], @"coordinate":place.location}];
                     if (_locationArr.count == tmp.count ){
-                        for (NSDictionary *dic in _locationArr) {
-                            DotAddressView *view = [[DotAddressView alloc]initWithFrame:CGRectMake(0, 0, 50, 50)];
-                            view.dataDic = dic;
-                            
-                            [_dotAddViewArr addObject:view];
-                            [_container addSubview:view];
-                        }
-                        [self.locationManager startUpdatingLocation];
-
-                        [self.locationManager startUpdatingHeading];
+                        [_indicateView stopAnimating];
+                        [self initDotView];
+                        [self initLocationView];
+                 
                     }
                 }];
             }
@@ -185,9 +233,9 @@ typedef void(^TouchUpBubble)(void);
         CGRect convertRect = [_radarView convertRect:dot.frame toView:_container];
         CGPoint convertPoint = convertRect.origin;
         
-        CGFloat radarCenterX = CGRectGetMaxX(_radarView.frame) - _radarView.frame.size.height / 2;
+
         CGFloat radarX = CGRectGetMaxX(_radarView.frame) - _radarView.frame.size.height;
-        CGFloat radarCenterY = CGRectGetMaxY(_radarView.frame) - _radarView.frame.size.height / 2;
+
         CGFloat radarY = CGRectGetMaxY(_radarView.frame) - _radarView.frame.size.height;
         CGFloat radarV = _radarView.frame.size.height;
         
@@ -204,7 +252,7 @@ typedef void(^TouchUpBubble)(void);
             CLLocationDistance distance = [loc distanceFromLocation:tmpLocation];
             view.distance = distance;
 //            CGRect tmp = CGRectMake([UIScreen mainScreen].bounds.size.width / radarV * (_radarView.frame.size.width / 2 + point.x * 1000) - view.frame.size.width,  [UIScreen mainScreen].bounds.size.height / radarV * (_radarView.frame.size.height / 2 - point.y * 1000), 100, 50);
-            CGRect tmp = CGRectMake(([UIScreen mainScreen].bounds.size.width + view.frame.size.width) / radarV * (convertPoint.x - radarX) - view.frame.size.width / 2,  [UIScreen mainScreen].bounds.size.height / radarV * (convertPoint.y - radarY), 100, 50);
+            CGRect tmp = CGRectMake(([UIScreen mainScreen].bounds.size.width + view.frame.size.width) / radarV * (convertPoint.x - radarX) - view.frame.size.width / 2,  [UIScreen mainScreen].bounds.size.height / radarV * 2  * (convertPoint.y - radarY), 100, 50);
             view.frame =tmp;
         } else {
                 view.dotIsHidden = YES;
@@ -245,17 +293,25 @@ typedef void(^TouchUpBubble)(void);
     if (isLocationFinish) return;
     isLocationFinish = YES;
     
+    [self getSoundLocationInfo];
+    [self.locationManager startUpdatingHeading];
+//    [self initLocationView];
+    
+
+    
+}
+
+- (void)initDotView {
     for (int i = 0; i < _locationArr.count; i++) {
         NSDictionary *dic = _locationArr[i];
         CLLocation *loc = dic[@"coordinate"];
-        CGPoint point = CGPointMake(loc.coordinate.longitude - location.coordinate.longitude, loc.coordinate.latitude - location.coordinate.latitude);
+        CGPoint point = CGPointMake(loc.coordinate.longitude - coordinate.longitude, loc.coordinate.latitude - coordinate.latitude);
         
         DotView *dot = [[DotView alloc] initWithFrame:CGRectMake(_radarView.frame.size.width / 2 + point.x * 1000, _radarView.frame.size.height / 2 - point.y * 1000, 4, 4)];
         dot.name = dic[@"address"];
         [_radarView addSubview:dot];
         [_dotViewArr addObject:dot];
     }
-    
 }
 #pragma mark - UIImagePickerDelegate
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
@@ -300,17 +356,54 @@ typedef void(^TouchUpBubble)(void);
 //厦门司法局118.156209,24.510129
 //加州商业广场118.160377,24.486413
 //奥林匹克博物馆118.198969,24.485007
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter]removeObserver:self];
+}
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-
-    CLLocation *loc1 = [[CLLocation alloc]initWithLatitude:24.501317 longitude:118.204646];
-    CLLocation *loc2 = [[CLLocation alloc]initWithLatitude:24.510129 longitude:118.156209];
-    CLLocation *loc3 = [[CLLocation alloc]initWithLatitude:24.486413 longitude:118.160377];
-    CLLocation *loc4 = [[CLLocation alloc]initWithLatitude:24.485007 longitude:118.198969];
-    _locationArr = @[@{@"address":@"观音山", @"coordinate":loc1}, @{@"address":@"厦门司法局", @"coordinate":loc2}, @{@"address":@"加州商业广场", @"coordinate":loc3}, @{@"address":@"奥林匹克博物馆", @"coordinate":loc4}].mutableCopy;
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(keyboardFrameChange:) name:UIKeyboardDidChangeFrameNotification object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(keyboardFrameHide:) name:UIKeyboardWillHideNotification object:nil];
+_searchQuery = @"Park";
+//    CLLocation *loc1 = [[CLLocation alloc]initWithLatitude:24.501317 longitude:118.204646];
+//    CLLocation *loc2 = [[CLLocation alloc]initWithLatitude:24.510129 longitude:118.156209];
+//    CLLocation *loc3 = [[CLLocation alloc]initWithLatitude:24.486413 longitude:118.160377];
+//    CLLocation *loc4 = [[CLLocation alloc]initWithLatitude:24.485007 longitude:118.198969];
+//    _locationArr = @[@{@"address":@"观音山", @"coordinate":loc1}, @{@"address":@"厦门司法局", @"coordinate":loc2}, @{@"address":@"加州商业广场", @"coordinate":loc3}, @{@"address":@"奥林匹克博物馆", @"coordinate":loc4}].mutableCopy;
+    _locationArr = @[].mutableCopy;
     _dotViewArr = @[].mutableCopy;
     _dotAddViewArr = @[].mutableCopy;
+    
+    _indicateView = [[UIActivityIndicatorView alloc]init];
+    _indicateView.activityIndicatorViewStyle = UIActivityIndicatorViewStyleWhiteLarge;
+    UIWindow *window = [UIApplication sharedApplication].keyWindow;
+    [window addSubview:_indicateView];
+    _indicateView.center = window.center;
+
+    
+    
+    
+    _inputAddressText = [[UITextField alloc]initWithFrame:CGRectMake(10, [UIScreen mainScreen].bounds.size.height - 50, [UIScreen mainScreen].bounds.size.width - 20, 40)];
+    _inputAddressText.borderStyle = UITextBorderStyleNone;
+    _inputAddressText.layer.borderColor = [UIColor clearColor].CGColor;
+    _inputAddressText.layer.borderWidth = .5;
+    _inputAddressText.layer.cornerRadius = 5;
+    _inputAddressText.backgroundColor = [UIColor whiteColor];
+    _inputAddressText.placeholder = _searchQuery;
+    
+    UIButton *searchBtn = [[UIButton alloc]initWithFrame:CGRectMake(0, 0, 40, 40)];
+    [searchBtn setTitle:@"搜索" forState:UIControlStateNormal];
+    searchBtn.titleLabel.font = [UIFont systemFontOfSize:13];
+    [searchBtn setTitleColor:[UIColor colorWithRed:100 / 255.0 green:100 / 255.0 blue:100 / 255.0 alpha:1] forState:UIControlStateNormal];
+    [searchBtn addTarget:self action:@selector(searchAddress) forControlEvents:UIControlEventTouchUpInside];
+    
+    UIView *view = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 10, 10)];
+    
+    _inputAddressText.leftView = view;
+    _inputAddressText.leftViewMode = UITextFieldViewModeAlways;
+    
+    _inputAddressText.rightViewMode = UITextFieldViewModeAlways;
+    _inputAddressText.rightView = searchBtn;
+    
     
     
     _directionL = [UILabel new];
@@ -332,7 +425,7 @@ typedef void(^TouchUpBubble)(void);
     
     
     _previousAngle = @0;
-    [self.locationManager startUpdatingHeading];
+
     [self.locationManager startUpdatingLocation];
 //    [self getSoundLocationInfo];
 
@@ -344,17 +437,11 @@ typedef void(^TouchUpBubble)(void);
     //    [_container addSubview:_directionL];
 //    [_container addSubview:_directionAnimationL];
     [_container addSubview:_radarView];
+    [_container insertSubview:_inputAddressText atIndex:10];
+
     
+
     
-    
-    for (NSDictionary *dic in _locationArr) {
-        DotAddressView *view = [[DotAddressView alloc]initWithFrame:CGRectMake(0, 0, 50, 50)];
-        view.dataDic = dic;
-        
-        [_dotAddViewArr addObject:view];
-        [_container addSubview:view];
-    }
-    [self initLocationView];
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         //cameraOverlayView have a must condition what sourceType of imagepicker must is UIImagePickerControllerSourceTypeCamera
         self.imagePicker.cameraOverlayView = _container;
@@ -448,6 +535,7 @@ typedef void(^TouchUpBubble)(void);
 - (void)setDataDic:(NSDictionary *)dataDic {
     _dataDic = [dataDic copy];
     self.nameL.text = _dataDic[@"address"];
+    self.nameL.adjustsFontSizeToFitWidth  = YES;
     
 }
 
