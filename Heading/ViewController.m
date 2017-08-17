@@ -130,7 +130,7 @@ typedef void(^TouchUpBubble)(void);
 
 - (void)initLocationView {
     for (NSDictionary *dic in _locationArr) {
-        DotAddressView *view = [[DotAddressView alloc]initWithFrame:CGRectMake(0, 0, 50, 50)];
+        DotAddressView *view = [[DotAddressView alloc]initWithFrame:CGRectMake(-200, -200, 50, 50)];
         view.dataDic = dic;
         
         [_dotAddViewArr addObject:view];
@@ -188,6 +188,11 @@ typedef void(^TouchUpBubble)(void);
     }
     return nil;
 }
+- (void)stopIndicate {
+    if ([_indicateView isAnimating]) {
+    [_indicateView stopAnimating];
+    }
+}
 - (void)getSoundLocationInfo {
     MKCoordinateRegion region = MKCoordinateRegionMakeWithDistance(coordinate,100, 100);
     MKLocalSearchRequest *request = [[MKLocalSearchRequest alloc]init];
@@ -200,15 +205,23 @@ typedef void(^TouchUpBubble)(void);
             NSArray *tmp = response.mapItems;
             [_locationArr removeAllObjects];
             [_dotAddViewArr removeAllObjects];
+            
+            [self performSelector:@selector(stopIndicate) withObject:nil afterDelay:10];
+            
             for (MKMapItem *item in tmp) {
                 CLGeocoder *geo = [[CLGeocoder alloc]init];
                 [geo geocodeAddressString:item.name completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
                     CLPlacemark *place = placemarks[0];
                     if (!place) return;
                     NSDictionary *dic = place.addressDictionary;
-                    NSString *tmpStr = [NSString stringWithFormat:@"%@%@%@", dic[@"State"], dic[@"SubLocality"], dic[@"City"]];
+                    NSString *tmpStr = [NSString stringWithFormat:@"%@%@%@", dic[@"State"], dic[@"SubLocality"] ? dic[@"SubLocality"] : @"", dic[@"City"]];
                     
+                    
+                    if (place.name.length > tmpStr.length) {
                     [_locationArr addObject:@{@"address":[place.name substringFromIndex:tmpStr.length], @"coordinate":place.location}];
+                    } else {
+                        [_locationArr addObject:@{@"address":place.name , @"coordinate":place.location}];
+                    }
                     if (_locationArr.count == tmp.count ){
                         [_indicateView stopAnimating];
                         [self initDotView];
@@ -439,12 +452,13 @@ _searchQuery = @"Park";
     [_container addSubview:_radarView];
     [_container insertSubview:_inputAddressText atIndex:10];
 
-    
+
 
     
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         //cameraOverlayView have a must condition what sourceType of imagepicker must is UIImagePickerControllerSourceTypeCamera
         self.imagePicker.cameraOverlayView = _container;
+        
         //self.navigationController not nil
         [self presentViewController:self.imagePicker animated:YES completion:^{
             
