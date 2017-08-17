@@ -188,6 +188,11 @@ typedef void(^TouchUpBubble)(void);
     }
     return nil;
 }
+- (void)stopIndicate {
+    if ([_indicateView isAnimating]) {
+    [_indicateView stopAnimating];
+    }
+}
 - (void)getSoundLocationInfo {
     MKCoordinateRegion region = MKCoordinateRegionMakeWithDistance(coordinate,100, 100);
     MKLocalSearchRequest *request = [[MKLocalSearchRequest alloc]init];
@@ -200,6 +205,9 @@ typedef void(^TouchUpBubble)(void);
             NSArray *tmp = response.mapItems;
             [_locationArr removeAllObjects];
             [_dotAddViewArr removeAllObjects];
+            
+            [self performSelector:@selector(stopIndicate) withObject:nil afterDelay:10];
+            
             for (MKMapItem *item in tmp) {
                 CLGeocoder *geo = [[CLGeocoder alloc]init];
                 [geo geocodeAddressString:item.name completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error) {
@@ -439,12 +447,13 @@ _searchQuery = @"Park";
     [_container addSubview:_radarView];
     [_container insertSubview:_inputAddressText atIndex:10];
 
-    
+
 
     
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
         //cameraOverlayView have a must condition what sourceType of imagepicker must is UIImagePickerControllerSourceTypeCamera
         self.imagePicker.cameraOverlayView = _container;
+        
         //self.navigationController not nil
         [self presentViewController:self.imagePicker animated:YES completion:^{
             
